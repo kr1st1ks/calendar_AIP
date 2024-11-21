@@ -4,8 +4,8 @@ from PyQt5.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QCalendarWidget, QTableWidget,
     QTableWidgetItem, QTimeEdit, QTextEdit, QMessageBox
 )
-from PyQt5.QtCore import QDate, QTime, Qt
-from PyQt5.QtGui import QColor, QPalette
+from PyQt5.QtCore import QTime
+
 
 from docx import Document
 from docx.shared import Pt
@@ -87,8 +87,8 @@ class ScheduleApp(QMainWindow):
 
         # Таблица для отображения событий
         self.event_table = QTableWidget()
-        self.event_table.setColumnCount(3)
-        self.event_table.setHorizontalHeaderLabels(["Время начала", "Время окончания", "Описание"])
+        self.event_table.setColumnCount(4)  # Теперь 4 столбца
+        self.event_table.setHorizontalHeaderLabels(["Дата", "Начало", "Конец", "Описание"])
         self.event_table.setStyleSheet("""
             QTableWidget {
                 border: 1px solid #ddd;
@@ -122,6 +122,18 @@ class ScheduleApp(QMainWindow):
         self.edit_event_button.setStyleSheet("background-color: #009688; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
         self.edit_event_button.clicked.connect(self.edit_event)
         self.layout.addWidget(self.edit_event_button)
+        
+        self.search_layout = QHBoxLayout()
+        self.layout.addLayout(self.search_layout)
+
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Введите текст для поиска...")
+        self.search_layout.addWidget(self.search_input)
+
+        self.search_button = QPushButton("Поиск")
+        self.search_button.setStyleSheet("background-color: #FFA726; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+        self.search_button.clicked.connect(self.search_events)
+        self.search_layout.addWidget(self.search_button)
 
         # Обновить расписание для выбранной даты
         self.update_schedule_view()
@@ -237,9 +249,9 @@ class ScheduleApp(QMainWindow):
             return
 
         # Получаем данные из выбранной строки
-        start_time = self.event_table.item(selected_row, 0).text()
-        end_time = self.event_table.item(selected_row, 1).text()
-        description = self.event_table.item(selected_row, 2).text()
+        start_time = self.event_table.item(selected_row, 1).text()
+        end_time = self.event_table.item(selected_row, 2).text()
+        description = self.event_table.item(selected_row, 3).text()
 
         # Получаем выбранную дату из календаря
         selected_date = self.calendar.selectedDate().toString("yyyy-MM-dd")
@@ -387,24 +399,59 @@ class ScheduleApp(QMainWindow):
         dialog_layout.addWidget(close_button)
 
         self.view_schedule_dialog.show()
+        
+    def search_events(self):
+        """Поиск событий по описанию."""
+        search_term = self.search_input.text().strip().lower()  # Получаем поисковый запрос
 
-    def update_schedule_view(self):
-        # Получаем выбранную дату
-        selected_date = self.calendar.selectedDate().toString("yyyy-MM-dd")
-        events = self.schedule.get(selected_date, [])
+        if not search_term:  # Если строка поиска пустая
+            QMessageBox.warning(self, "Ошибка", "Введите текст для поиска.")
+            return
 
-        # Обновляем таблицу
-        self.event_table.setRowCount(len(events))
-        for row, event in enumerate(events):
-            self.event_table.setItem(row, 0, QTableWidgetItem(event['start_time']))
-            self.event_table.setItem(row, 1, QTableWidgetItem(event['end_time']))
+        # Создаём отфильтрованное расписание
+        filtered_schedule = defaultdict(list)
+        for date, events in self.schedule.items():
+            for event in events:
+                if search_term in event['description'].lower():  # Поиск в описании события
+                    filtered_schedule[date].append(event)
 
-            description_item = QTableWidgetItem(event['description'])
-            description_item.setTextAlignment(Qt.AlignLeft | Qt.AlignTop)  # Выравнивание текста
-            self.event_table.setItem(row, 2, description_item)
+        if not filtered_schedule:  # Если ничего не найдено
+            QMessageBox.information(self, "Поиск", f"Ничего не найдено по запросу: {search_term}")
+            return
 
-        # Устанавливаем ширину столбца для переноса текста
-        self.event_table.setColumnWidth(2, 300)
+        # Обновляем таблицу с отфильтрованными событиями
+        self.update_schedule_view(filtered_schedule)
+        
+    def update_schedule_view(self, filtered_schedule=None):
+        """
+        Обновляет виджет таблицы расписания.
+        Если передан filtered_schedule, отображает только отфильтрованные данные.
+        """
+        # Если передан словарь с фильтром
+        if isinstance(filtered_schedule, dict):
+            data = filtered_schedule.items()
+        else:
+            # Получаем расписание для выбранной даты из календаря
+            selected_date = self.calendar.selectedDate().toString("yyyy-MM-dd")
+            events = self.schedule.get(selected_date, [])
+            data = {selected_date: events}.items()
+
+        # Очищаем таблицу
+        self.event_table.setRowCount(0)
+
+        # Заполняем таблицу новыми данными
+        for date, events in data:
+            for event in events:
+                row = self.event_table.rowCount()
+                self.event_table.insertRow(row)
+                self.event_table.setItem(row, 0, QTableWidgetItem(date))  # Дата
+                self.event_table.setItem(row, 1, QTableWidgetItem(event['start_time']))  # Начало
+                self.event_table.setItem(row, 2, QTableWidgetItem(event['end_time']))    # Конец
+                self.event_table.setItem(row, 3, QTableWidgetItem(event['description']))  # Описание
+
+        # Обновляем отображение таблицы
+        self.event_table.resizeColumnsToContents()
+
 
     def export_to_docx(self):
         # Получаем все данные из расписания
