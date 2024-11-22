@@ -13,7 +13,7 @@ from docx.enum.table import WD_ALIGN_VERTICAL
 
 from collections import defaultdict
 
-# some text
+# some text some
 
 class ScheduleApp(QMainWindow):
     def __init__(self):
