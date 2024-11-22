@@ -53,12 +53,12 @@ class ScheduleApp(QMainWindow):
         self.calendar = QCalendarWidget()
         self.calendar.setStyleSheet("""
             QCalendarWidget {
-                background-color: #ffffff;
+                background-color: #f0d7c8;
                 border: 1px solid #ddd;
                 font-size: 14px;
             }
             QCalendarWidget QAbstractItemView {
-                selection-background-color: #4CAF50;
+                selection-background-color: #996633;
             }
             QCalendarWidget QToolButton {
                 background-color: #4CAF50;
