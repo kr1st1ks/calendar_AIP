@@ -4,16 +4,17 @@ import os
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
     QPushButton, QLabel, QLineEdit, QCalendarWidget, QTableWidget,
-    QTableWidgetItem, QTimeEdit, QTextEdit, QMessageBox, QComboBox
+    QTableWidgetItem, QTimeEdit, QTextEdit, QMessageBox, QComboBox,
+    QFileDialog
 )
 from PyQt5.QtCore import QTime, QDate
-
 
 from docx import Document
 from docx.shared import Pt
 from docx.enum.table import WD_ALIGN_VERTICAL
 
 from collections import defaultdict
+
 
 class ScheduleApp(QMainWindow):
     def __init__(self):
@@ -35,17 +36,20 @@ class ScheduleApp(QMainWindow):
         self.layout.addLayout(self.button_layout)
 
         self.add_event_button = QPushButton("Добавить событие")
-        self.add_event_button.setStyleSheet("background-color: #4CAF50; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+        self.add_event_button.setStyleSheet(
+            "background-color: #4CAF50; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
         self.add_event_button.clicked.connect(self.show_add_event_dialog)
         self.button_layout.addWidget(self.add_event_button)
 
         self.view_schedule_button = QPushButton("Просмотреть расписание")
-        self.view_schedule_button.setStyleSheet("background-color: #2196F3; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+        self.view_schedule_button.setStyleSheet(
+            "background-color: #2196F3; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
         self.view_schedule_button.clicked.connect(self.show_view_schedule_dialog)
         self.button_layout.addWidget(self.view_schedule_button)
 
         self.export_button = QPushButton("Экспортировать в .docx")
-        self.export_button.setStyleSheet("background-color: #FFC107; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+        self.export_button.setStyleSheet(
+            "background-color: #FFC107; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
         self.export_button.clicked.connect(self.export_to_docx)
         self.button_layout.addWidget(self.export_button)
 
@@ -113,16 +117,18 @@ class ScheduleApp(QMainWindow):
 
         # Кнопка для удаления события
         self.delete_event_button = QPushButton("Удалить событие")
-        self.delete_event_button.setStyleSheet("background-color: #f44336; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+        self.delete_event_button.setStyleSheet(
+            "background-color: #f44336; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
         self.delete_event_button.clicked.connect(self.delete_event)
         self.layout.addWidget(self.delete_event_button)
 
         # Кнопка для редактирования события
         self.edit_event_button = QPushButton("Редактировать событие")
-        self.edit_event_button.setStyleSheet("background-color: #009688; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+        self.edit_event_button.setStyleSheet(
+            "background-color: #009688; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
         self.edit_event_button.clicked.connect(self.edit_event)
         self.layout.addWidget(self.edit_event_button)
-        
+
         self.search_layout = QHBoxLayout()
         self.layout.addLayout(self.search_layout)
 
@@ -131,7 +137,8 @@ class ScheduleApp(QMainWindow):
         self.search_layout.addWidget(self.search_input)
 
         self.search_button = QPushButton("Поиск")
-        self.search_button.setStyleSheet("background-color: #FFA726; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+        self.search_button.setStyleSheet(
+            "background-color: #FFA726; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
         self.search_button.clicked.connect(self.search_events)
         self.search_layout.addWidget(self.search_button)
         self.search_input.returnPressed.connect(self.search_button.click)
@@ -223,7 +230,6 @@ class ScheduleApp(QMainWindow):
             theme = theme_input.currentText().strip()  # Получаем тему
             description = description_input.toPlainText()
 
-
             # Проверка накладок
             for event in self.schedule[date]:
                 if not (end_time <= event['start_time'] or start_time >= event['end_time']):
@@ -271,8 +277,8 @@ class ScheduleApp(QMainWindow):
         # Ищем и удаляем событие из словаря
         for event in self.schedule[selected_date]:
             if (event['start_time'] == start_time and
-                event['end_time'] == end_time and
-                event['description'] == description):
+                    event['end_time'] == end_time and
+                    event['description'] == description):
                 self.schedule[selected_date].remove(event)
                 QMessageBox.information(self, "Удаление", "Событие успешно удалено.")
                 break
@@ -534,6 +540,7 @@ class ScheduleApp(QMainWindow):
         dialog_layout.addWidget(close_button)
 
         self.view_schedule_dialog.show()
+
     def search_events(self):
         search_term = self.search_input.text().strip().lower()
         if not search_term:
@@ -552,7 +559,7 @@ class ScheduleApp(QMainWindow):
             return
 
         self.update_schedule_view(filtered_schedule)
-        
+
     def update_schedule_view(self, filtered_schedule=None):
         """
         Обновляет виджет таблицы расписания.
@@ -584,19 +591,26 @@ class ScheduleApp(QMainWindow):
         # Обновляем отображение таблицы
         self.event_table.resizeColumnsToContents()
 
-
     def export_to_docx(self):
         # Получаем все данные из расписания
         if not self.schedule:
             QMessageBox.warning(self, "Ошибка", "Нет событий для экспорта.")
             return
 
-        # Создаем новый документ Word
+        # Запрашиваем путь и имя файла для сохранения
+        file_name, _ = QFileDialog.getSaveFileName(self, "Сохранить расписание", "", "Документ Word (*.docx)")
+
+        if not file_name:
+            return  # Если пользователь отменил, выходим
+
+        # Создаем новый документ
         doc = Document()
         doc.add_heading("Расписание", 0)
 
-        # Создаем таблицу с 4 столбцами: Дата, Время начала, Время окончания, Описание
-        table = doc.add_table(rows=1, cols=5)  # 5 столбцов теперь
+        # Создаем таблицу с 5 столбцами: Дата, Время начала, Время окончания, Тема, Описание
+        table = doc.add_table(rows=1, cols=5)
+
+        # Заголовки таблицы
         headers = table.rows[0].cells
         headers[0].text = "Дата"
         headers[1].text = "Время начала"
@@ -604,16 +618,17 @@ class ScheduleApp(QMainWindow):
         headers[3].text = "Тема"
         headers[4].text = "Описание"
 
-        # Устанавливаем ширину столбцов
-        table.columns[0].width = Pt(100)  # Дата
-        table.columns[1].width = Pt(80)   # Время начала
-        table.columns[2].width = Pt(80)   # Время окончания
-        table.columns[3].width = Pt(250)  # Описание (широкий столбец для описания)
-
-        # Применим стиль к заголовкам
+        # Применяем стиль к заголовкам
         for cell in headers:
             cell.paragraphs[0].runs[0].font.bold = True
             cell.paragraphs[0].alignment = 1  # Центрируем заголовки
+
+        # Устанавливаем ширину столбцов
+        table.columns[0].width = Pt(80)  # Дата
+        table.columns[1].width = Pt(80)  # Время начала
+        table.columns[2].width = Pt(80)  # Время окончания
+        table.columns[3].width = Pt(120)  # Тема
+        table.columns[4].width = Pt(20)  # Описание (широкий столбец для описания)
 
         # Добавляем все события в таблицу
         for date, events in sorted(self.schedule.items()):
@@ -624,25 +639,29 @@ class ScheduleApp(QMainWindow):
                 row_cells[2].text = event['end_time']
                 row_cells[3].text = event['theme']  # Добавляем тему
                 row_cells[4].text = event['description']
+
                 # Настроим выравнивание для текста в ячейках
-                row_cells[0].paragraphs[0].alignment = 1  # Выравнивание даты по центру
-                row_cells[1].paragraphs[0].alignment = 1  # Выравнивание времени начала по центру
-                row_cells[2].paragraphs[0].alignment = 1  # Выравнивание времени окончания по центру
+                row_cells[0].paragraphs[0].alignment = 0  # Выравнивание даты по центру
+                row_cells[1].paragraphs[0].alignment = 0  # Выравнивание времени начала по центру
+                row_cells[2].paragraphs[0].alignment = 0  # Выравнивание времени окончания по центру
                 row_cells[3].paragraphs[0].alignment = 0  # Описание выравниваем по левому краю
 
                 # Сделаем текст в столбце "Описание" многострочным (перенос слов)
-                for paragraph in row_cells[3].paragraphs:
+                for paragraph in row_cells[4].paragraphs:
                     for run in paragraph.runs:
                         run.font.size = Pt(10)  # Устанавливаем размер шрифта для текста в описании
 
-                # Вертикальное выравнивание для столбцов
+                # Вертикальное выравнивание для всех ячеек
                 for cell in row_cells:
-                    cell.paragraphs[0].alignment = 0  # Выравнивание текста по левому краю для всех столбцов
+                    cell.paragraphs[0].alignment = 3
                     cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER  # Выравнивание по вертикали
 
         # Сохраняем файл
-        doc.save("Расписание.docx")
-        QMessageBox.information(self, "Экспорт", "Все события успешно экспортированы в Расписание.docx.")
+        try:
+            doc.save(file_name)
+            QMessageBox.information(self, "Экспорт", f"Все события успешно экспортированы в {file_name}.")
+        except Exception as e:
+            QMessageBox.warning(self, "Ошибка", f"Не удалось сохранить документ: {e}")
 
     def save_schedule_to_file(self):
         try:
