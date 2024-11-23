@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QCalendarWidget, QTableWidget,
     QTableWidgetItem, QTimeEdit, QTextEdit, QMessageBox, QComboBox
 )
-from PyQt5.QtCore import QTime, QEvent
+from PyQt5.QtCore import QTime, QDate
 
 
 from docx import Document
@@ -223,9 +223,6 @@ class ScheduleApp(QMainWindow):
             theme = theme_input.currentText().strip()  # Получаем тему
             description = description_input.toPlainText()
 
-            if not theme or theme == "Выберите или введите тему...":  # Проверка наличия темы
-                QMessageBox.warning(self, "Ошибка", "Тема события обязательна!")
-                return
 
             # Проверка накладок
             for event in self.schedule[date]:
@@ -418,16 +415,26 @@ class ScheduleApp(QMainWindow):
         dialog_layout = QVBoxLayout()
         self.view_schedule_dialog.setLayout(dialog_layout)
 
-        # Добавление выбора даты
+        # Добавление выбора начальной даты
         filter_layout = QHBoxLayout()
         dialog_layout.addLayout(filter_layout)
 
-        date_filter_label = QLabel("Фильтр по дате:")
-        filter_layout.addWidget(date_filter_label)
+        # Календарь для выбора начальной даты
+        start_date_label = QLabel("Выберите дату начала:")
+        filter_layout.addWidget(start_date_label)
+        start_date_input = QCalendarWidget()
+        start_date_input.setSelectedDate(QDate.currentDate())  # По умолчанию текущая дата
+        filter_layout.addWidget(start_date_input)
 
-        date_filter_input = QCalendarWidget()
-        date_filter_input.setMaximumHeight(200)
-        filter_layout.addWidget(date_filter_input)
+        # Выпадающий список для выбора диапазона
+        range_label = QLabel("Выберите диапазон:")
+        filter_layout.addWidget(range_label)
+
+        date_range_input = QComboBox()  # Выпадающий список для диапазона
+        date_range_input.addItem("1 неделя")  # Список опций
+        date_range_input.addItem("1 месяц")
+        date_range_input.addItem("3 месяца")
+        filter_layout.addWidget(date_range_input)
 
         # Добавление выбора темы
         theme_filter_label = QLabel("Фильтр по теме:")
@@ -458,33 +465,61 @@ class ScheduleApp(QMainWindow):
         dialog_layout.addWidget(schedule_table)
 
         def populate_table(filtered_schedule=None):
-            """Обновляет таблицу расписания, фильтруя по выбранной дате и теме."""
+            """Обновляет таблицу расписания, фильтруя по выбранной дате и диапазону."""
             schedule_table.setRowCount(0)  # Очистить таблицу
 
             # Если фильтр пустой, показываем всё расписание
             data = self.schedule.items() if filtered_schedule is None else filtered_schedule.items()
 
-            # Применяем фильтрацию по теме
-            selected_theme = theme_filter_input.currentText()
+            # Применяем фильтрацию по дате и диапазону
+            selected_start_date = start_date_input.selectedDate()
+            selected_range = date_range_input.currentText()
+
+            # Преобразуем диапазон в дни
+            if selected_range == "1 неделя":
+                end_date = selected_start_date.addDays(7)
+            elif selected_range == "1 месяц":
+                end_date = selected_start_date.addMonths(1)
+            elif selected_range == "3 месяца":
+                end_date = selected_start_date.addMonths(3)
+
+            # Фильтрация событий по диапазону
+            selected_theme = theme_filter_input.currentText()  # Получаем выбранную тему
             for date, events in sorted(data):
-                for event in sorted(events, key=lambda e: e['start_time']):
-                    if selected_theme == "Все темы" or event['theme'] == selected_theme:
-                        row = schedule_table.rowCount()
-                        schedule_table.insertRow(row)
-                        schedule_table.setItem(row, 0, QTableWidgetItem(date))
-                        schedule_table.setItem(row, 1, QTableWidgetItem(event['start_time']))
-                        schedule_table.setItem(row, 2, QTableWidgetItem(event['end_time']))
-                        schedule_table.setItem(row, 3, QTableWidgetItem(event['theme']))
-                        schedule_table.setItem(row, 4, QTableWidgetItem(event['description']))
+                row_date = QDate.fromString(date, "yyyy-MM-dd")
+                if selected_start_date <= row_date <= end_date:
+                    for event in sorted(events, key=lambda e: e['start_time']):
+                        # Применяем фильтрацию по теме
+                        if selected_theme == "Все темы" or event['theme'] == selected_theme:
+                            row = schedule_table.rowCount()
+                            schedule_table.insertRow(row)
+                            schedule_table.setItem(row, 0, QTableWidgetItem(date))
+                            schedule_table.setItem(row, 1, QTableWidgetItem(event['start_time']))
+                            schedule_table.setItem(row, 2, QTableWidgetItem(event['end_time']))
+                            schedule_table.setItem(row, 3, QTableWidgetItem(event['theme']))
+                            schedule_table.setItem(row, 4, QTableWidgetItem(event['description']))
 
         def apply_filter():
-            """Применяет фильтр по выбранной дате и теме."""
-            selected_date = date_filter_input.selectedDate().toString("yyyy-MM-dd")
+            """Применяет фильтр по выбранной дате, диапазону и теме."""
             filtered_schedule = {}
 
-            # Фильтрация по дате
-            if selected_date:
-                filtered_schedule[selected_date] = self.schedule.get(selected_date, [])
+            # Получаем выбранные даты для диапазона
+            selected_start_date = start_date_input.selectedDate().toString("yyyy-MM-dd")
+            selected_range = date_range_input.currentText()
+
+            # Преобразуем диапазон в дни
+            if selected_range == "1 неделя":
+                end_date = start_date_input.selectedDate().addDays(7)
+            elif selected_range == "1 месяц":
+                end_date = start_date_input.selectedDate().addMonths(1)
+            elif selected_range == "3 месяца":
+                end_date = start_date_input.selectedDate().addMonths(3)
+
+            # Фильтрация по дате и диапазону
+            for date, events in self.schedule.items():
+                row_date = QDate.fromString(date, "yyyy-MM-dd")
+                if start_date_input.selectedDate() <= row_date <= end_date:
+                    filtered_schedule[date] = events
 
             populate_table(filtered_schedule)
 
@@ -499,7 +534,6 @@ class ScheduleApp(QMainWindow):
         dialog_layout.addWidget(close_button)
 
         self.view_schedule_dialog.show()
-
     def search_events(self):
         search_term = self.search_input.text().strip().lower()
         if not search_term:
