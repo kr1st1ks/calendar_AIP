@@ -4,9 +4,9 @@ import os
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
     QPushButton, QLabel, QLineEdit, QCalendarWidget, QTableWidget,
-    QTableWidgetItem, QTimeEdit, QTextEdit, QMessageBox
+    QTableWidgetItem, QTimeEdit, QTextEdit, QMessageBox, QComboBox
 )
-from PyQt5.QtCore import QTime
+from PyQt5.QtCore import QTime, QEvent
 
 
 from docx import Document
@@ -87,8 +87,8 @@ class ScheduleApp(QMainWindow):
 
         # Таблица для отображения событий
         self.event_table = QTableWidget()
-        self.event_table.setColumnCount(4)  # Теперь 4 столбца
-        self.event_table.setHorizontalHeaderLabels(["Дата", "Начало", "Конец", "Описание"])
+        self.event_table.setColumnCount(5)  # Увеличиваем количество столбцов
+        self.event_table.setHorizontalHeaderLabels(["Дата", "Начало", "Конец", "Тема", "Описание"])  # Добавляем "Тема"
         self.event_table.setStyleSheet("""
             QTableWidget {
                 border: 1px solid #ddd;
@@ -134,6 +134,7 @@ class ScheduleApp(QMainWindow):
         self.search_button.setStyleSheet("background-color: #FFA726; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
         self.search_button.clicked.connect(self.search_events)
         self.search_layout.addWidget(self.search_button)
+        self.search_input.returnPressed.connect(self.search_button.click)
 
         # Обновить расписание для выбранной даты
         self.update_schedule_view()
@@ -186,6 +187,27 @@ class ScheduleApp(QMainWindow):
         description_input = QTextEdit()
         dialog_layout.addWidget(description_input)
 
+        # Добавьте виджет выбора темы
+        theme_label = QLabel("Тема:")
+        dialog_layout.addWidget(theme_label)
+
+        # Создаем комбинированный виджет для выбора темы или ввода новой
+        theme_input = QComboBox()
+        theme_input.setEditable(True)  # Позволяем редактировать текст
+        theme_input.addItem("")  # Строка-заполнитель
+
+        # Собираем все уникальные темы из расписания
+        all_themes = set()
+        for date, events in self.schedule.items():
+            for event in events:
+                all_themes.add(event['theme'])
+
+        # Добавляем существующие темы в комбинированный список
+        for theme in sorted(all_themes):  # Сортируем для удобства
+            theme_input.addItem(theme)
+
+        dialog_layout.addWidget(theme_input)
+
         # Кнопки "Добавить" и "Отмена"
         button_layout = QHBoxLayout()
         dialog_layout.addLayout(button_layout)
@@ -198,7 +220,12 @@ class ScheduleApp(QMainWindow):
             date = date_input.text()
             start_time = start_time_input.time().toString("HH:mm")
             end_time = end_time_input.time().toString("HH:mm")
+            theme = theme_input.currentText().strip()  # Получаем тему
             description = description_input.toPlainText()
+
+            if not theme or theme == "Выберите или введите тему...":  # Проверка наличия темы
+                QMessageBox.warning(self, "Ошибка", "Тема события обязательна!")
+                return
 
             # Проверка накладок
             for event in self.schedule[date]:
@@ -217,6 +244,7 @@ class ScheduleApp(QMainWindow):
             self.schedule[date].append({
                 'start_time': start_time,
                 'end_time': end_time,
+                'theme': theme,  # Сохраняем тему
                 'description': description
             })
             QMessageBox.information(dialog, "Успех", "Событие добавлено!")
@@ -235,9 +263,10 @@ class ScheduleApp(QMainWindow):
             return
 
         # Получаем данные из выбранной строки
-        start_time = self.event_table.item(selected_row, 0).text()
-        end_time = self.event_table.item(selected_row, 1).text()
-        description = self.event_table.item(selected_row, 2).text()
+        start_time = self.event_table.item(selected_row, 1).text()
+        end_time = self.event_table.item(selected_row, 2).text()
+        theme = self.event_table.item(selected_row, 3).text()
+        description = self.event_table.item(selected_row, 4).text()
 
         # Получаем выбранную дату из календаря
         selected_date = self.calendar.selectedDate().toString("yyyy-MM-dd")
@@ -266,7 +295,8 @@ class ScheduleApp(QMainWindow):
         # Получаем данные из выбранной строки
         start_time = self.event_table.item(selected_row, 1).text()
         end_time = self.event_table.item(selected_row, 2).text()
-        description = self.event_table.item(selected_row, 3).text()
+        theme = self.event_table.item(selected_row, 3).text()
+        description = self.event_table.item(selected_row, 4).text()
 
         # Получаем выбранную дату из календаря
         selected_date = self.calendar.selectedDate().toString("yyyy-MM-dd")
@@ -295,6 +325,28 @@ class ScheduleApp(QMainWindow):
         description_input = QTextEdit(description)
         dialog_layout.addWidget(description_input)
 
+        # Ввод темы
+        theme_label = QLabel("Тема:")
+        dialog_layout.addWidget(theme_label)
+
+        # Создаем комбинированный виджет для выбора темы или ввода новой
+        theme_input = QComboBox()
+        theme_input.setEditable(True)  # Позволяем редактировать текст
+        theme_input.addItem("Выберите или введите тему...")  # Строка-заполнитель
+
+        # Собираем все уникальные темы из расписания
+        all_themes = set()
+        for date, events in self.schedule.items():
+            for event in events:
+                all_themes.add(event['theme'])
+
+        # Добавляем существующие темы в комбинированный список
+        for theme in sorted(all_themes):  # Сортируем для удобства
+            theme_input.addItem(theme)
+
+        theme_input.setCurrentText(theme)  # Устанавливаем текущую тему
+        dialog_layout.addWidget(theme_input)
+
         # Кнопки "Сохранить" и "Отмена"
         button_layout = QHBoxLayout()
         dialog_layout.addLayout(button_layout)
@@ -307,9 +359,9 @@ class ScheduleApp(QMainWindow):
             new_start_time = start_time_input.time().toString("HH:mm")
             new_end_time = end_time_input.time().toString("HH:mm")
             new_description = description_input.toPlainText()
-
+            new_theme = theme_input.currentText().strip()  # Получаем новую тему
             # Проверка накладок с другими событиями
-            #for event in self.schedule[selected_date]:
+            # for event in self.schedule[selected_date]:
             #    if not (new_end_time <= event['start_time'] or new_start_time >= event['end_time']):
             #        reply = QMessageBox.question(
             #            dialog,
@@ -320,20 +372,33 @@ class ScheduleApp(QMainWindow):
             #       )
             #        if reply == QMessageBox.No:
             #            return
+            # Проверка накладок с другими событиями
+            for event in self.schedule[selected_date]:
+                if not (new_end_time <= event['start_time'] or new_start_time >= event['end_time']):
+                    reply = QMessageBox.question(
+                        dialog,
+                        "Накладка",
+                        f"Событие пересекается с '{event['description']}' "
+                        f"({event['start_time']} - {event['end_time']}). Сохранить изменения?",
+                        QMessageBox.Yes | QMessageBox.No
+                    )
+                    if reply == QMessageBox.No:
+                        return
 
             # Обновление события
             for event in self.schedule[selected_date]:
                 if (event['start_time'] == start_time and
-                    event['end_time'] == end_time and
-                    event['description'] == description):
+                        event['end_time'] == end_time and
+                        event['description'] == description):
                     event['start_time'] = new_start_time
                     event['end_time'] = new_end_time
+                    event['theme'] = new_theme  # Обновляем тему
                     event['description'] = new_description
                     break
-            
+
             # Сортировка событий по времени начала
             self.schedule[selected_date].sort(key=lambda event: event['start_time'])
-        
+
             QMessageBox.information(dialog, "Успех", "Событие успешно обновлено.")
             dialog.close()
             self.update_schedule_view()
@@ -341,7 +406,7 @@ class ScheduleApp(QMainWindow):
         save_button.clicked.connect(save_changes)
         cancel_button.clicked.connect(dialog.close)
         dialog.show()
-        
+
     def show_view_schedule_dialog(self):
         # Проверка, открыто ли уже окно расписания
         if hasattr(self, "view_schedule_dialog") and self.view_schedule_dialog is not None:
@@ -364,46 +429,66 @@ class ScheduleApp(QMainWindow):
         date_filter_input.setMaximumHeight(200)
         filter_layout.addWidget(date_filter_input)
 
+        # Добавление выбора темы
+        theme_filter_label = QLabel("Фильтр по теме:")
+        filter_layout.addWidget(theme_filter_label)
+
+        theme_filter_input = QComboBox()  # Выпадающий список для выбора темы
+        theme_filter_input.addItem("Все темы")  # По умолчанию показываем все темы
+
+        # Собираем все уникальные темы из расписания
+        all_themes = set()
+        for date, events in self.schedule.items():
+            for event in events:
+                all_themes.add(event['theme'])
+
+        for theme in sorted(all_themes):  # Сортируем для удобства
+            theme_filter_input.addItem(theme)
+
+        filter_layout.addWidget(theme_filter_input)
+
+        # Кнопка для применения фильтра
         filter_button = QPushButton("Применить фильтр")
         filter_layout.addWidget(filter_button)
 
-        show_all_button = QPushButton("Показать всё расписание")
-        filter_layout.addWidget(show_all_button)
-
         # Таблица для вывода расписания
         schedule_table = QTableWidget()
-        schedule_table.setColumnCount(4)
-        schedule_table.setHorizontalHeaderLabels(["Дата", "Время начала", "Время окончания", "Описание"])
+        schedule_table.setColumnCount(5)
+        schedule_table.setHorizontalHeaderLabels(["Дата", "Время начала", "Время окончания", "Тема", "Описание"])
         dialog_layout.addWidget(schedule_table)
 
         def populate_table(filtered_schedule=None):
-            """Обновляет таблицу расписания."""
+            """Обновляет таблицу расписания, фильтруя по выбранной дате и теме."""
             schedule_table.setRowCount(0)  # Очистить таблицу
 
             # Если фильтр пустой, показываем всё расписание
             data = self.schedule.items() if filtered_schedule is None else filtered_schedule.items()
 
+            # Применяем фильтрацию по теме
+            selected_theme = theme_filter_input.currentText()
             for date, events in sorted(data):
                 for event in sorted(events, key=lambda e: e['start_time']):
-                    row = schedule_table.rowCount()
-                    schedule_table.insertRow(row)
-                    schedule_table.setItem(row, 0, QTableWidgetItem(date))
-                    schedule_table.setItem(row, 1, QTableWidgetItem(event['start_time']))
-                    schedule_table.setItem(row, 2, QTableWidgetItem(event['end_time']))
-                    schedule_table.setItem(row, 3, QTableWidgetItem(event['description']))
+                    if selected_theme == "Все темы" or event['theme'] == selected_theme:
+                        row = schedule_table.rowCount()
+                        schedule_table.insertRow(row)
+                        schedule_table.setItem(row, 0, QTableWidgetItem(date))
+                        schedule_table.setItem(row, 1, QTableWidgetItem(event['start_time']))
+                        schedule_table.setItem(row, 2, QTableWidgetItem(event['end_time']))
+                        schedule_table.setItem(row, 3, QTableWidgetItem(event['theme']))
+                        schedule_table.setItem(row, 4, QTableWidgetItem(event['description']))
 
         def apply_filter():
-            """Применяет фильтр по выбранной дате."""
+            """Применяет фильтр по выбранной дате и теме."""
             selected_date = date_filter_input.selectedDate().toString("yyyy-MM-dd")
-            filtered_schedule = {selected_date: self.schedule.get(selected_date, [])}
+            filtered_schedule = {}
+
+            # Фильтрация по дате
+            if selected_date:
+                filtered_schedule[selected_date] = self.schedule.get(selected_date, [])
+
             populate_table(filtered_schedule)
 
-        def show_all_schedule():
-            """Сбрасывает фильтр и показывает всё расписание."""
-            populate_table()
-
         filter_button.clicked.connect(apply_filter)
-        show_all_button.clicked.connect(show_all_schedule)
 
         # Изначально показываем всё расписание
         populate_table()
@@ -414,27 +499,24 @@ class ScheduleApp(QMainWindow):
         dialog_layout.addWidget(close_button)
 
         self.view_schedule_dialog.show()
-        
-    def search_events(self):
-        """Поиск событий по описанию."""
-        search_term = self.search_input.text().strip().lower()  # Получаем поисковый запрос
 
-        if not search_term:  # Если строка поиска пустая
+    def search_events(self):
+        search_term = self.search_input.text().strip().lower()
+        if not search_term:
             QMessageBox.warning(self, "Ошибка", "Введите текст для поиска.")
             return
 
-        # Создаём отфильтрованное расписание
         filtered_schedule = defaultdict(list)
         for date, events in self.schedule.items():
             for event in events:
-                if search_term in event['description'].lower():  # Поиск в описании события
+                if (search_term in event['theme'].lower() or  # Фильтр по теме
+                        search_term in event['description'].lower()):  # Фильтр по описанию
                     filtered_schedule[date].append(event)
 
-        if not filtered_schedule:  # Если ничего не найдено
+        if not filtered_schedule:
             QMessageBox.information(self, "Поиск", f"Ничего не найдено по запросу: {search_term}")
             return
 
-        # Обновляем таблицу с отфильтрованными событиями
         self.update_schedule_view(filtered_schedule)
         
     def update_schedule_view(self, filtered_schedule=None):
@@ -461,8 +543,9 @@ class ScheduleApp(QMainWindow):
                 self.event_table.insertRow(row)
                 self.event_table.setItem(row, 0, QTableWidgetItem(date))  # Дата
                 self.event_table.setItem(row, 1, QTableWidgetItem(event['start_time']))  # Начало
-                self.event_table.setItem(row, 2, QTableWidgetItem(event['end_time']))    # Конец
-                self.event_table.setItem(row, 3, QTableWidgetItem(event['description']))  # Описание
+                self.event_table.setItem(row, 2, QTableWidgetItem(event['end_time']))  # Конец
+                self.event_table.setItem(row, 3, QTableWidgetItem(event['theme']))  # Тема
+                self.event_table.setItem(row, 4, QTableWidgetItem(event['description']))  # Описание
 
         # Обновляем отображение таблицы
         self.event_table.resizeColumnsToContents()
@@ -479,14 +562,13 @@ class ScheduleApp(QMainWindow):
         doc.add_heading("Расписание", 0)
 
         # Создаем таблицу с 4 столбцами: Дата, Время начала, Время окончания, Описание
-        table = doc.add_table(rows=1, cols=4)
-
-        # Настроим заголовки таблицы
+        table = doc.add_table(rows=1, cols=5)  # 5 столбцов теперь
         headers = table.rows[0].cells
         headers[0].text = "Дата"
         headers[1].text = "Время начала"
         headers[2].text = "Время окончания"
-        headers[3].text = "Описание"
+        headers[3].text = "Тема"
+        headers[4].text = "Описание"
 
         # Устанавливаем ширину столбцов
         table.columns[0].width = Pt(100)  # Дата
@@ -501,13 +583,13 @@ class ScheduleApp(QMainWindow):
 
         # Добавляем все события в таблицу
         for date, events in sorted(self.schedule.items()):
-            for event in sorted(events, key=lambda e: e['start_time']):
+            for event in events:
                 row_cells = table.add_row().cells
                 row_cells[0].text = date
                 row_cells[1].text = event['start_time']
                 row_cells[2].text = event['end_time']
-                row_cells[3].text = event['description']
-
+                row_cells[3].text = event['theme']  # Добавляем тему
+                row_cells[4].text = event['description']
                 # Настроим выравнивание для текста в ячейках
                 row_cells[0].paragraphs[0].alignment = 1  # Выравнивание даты по центру
                 row_cells[1].paragraphs[0].alignment = 1  # Выравнивание времени начала по центру
