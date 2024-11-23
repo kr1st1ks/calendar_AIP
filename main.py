@@ -1,4 +1,6 @@
 import sys
+import json
+import os
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
     QPushButton, QLabel, QLineEdit, QCalendarWidget, QTableWidget,
@@ -12,7 +14,6 @@ from docx.shared import Pt
 from docx.enum.table import WD_ALIGN_VERTICAL
 
 from collections import defaultdict
-#mine
 
 class ScheduleApp(QMainWindow):
     def __init__(self):
@@ -136,6 +137,21 @@ class ScheduleApp(QMainWindow):
 
         # Обновить расписание для выбранной даты
         self.update_schedule_view()
+
+        self.load_schedule_from_file()
+        self.update_schedule_view()
+
+    def load_schedule_from_file(self):
+        if os.path.exists("schedule.json"):
+            try:
+                with open("schedule.json", "r", encoding="utf-8") as file:
+                    # Загружаем расписание из файла
+                    data = json.load(file)
+                    # Конвертируем обратно в defaultdict
+                    self.schedule = defaultdict(list, data)
+                print("Расписание загружено из файла.")
+            except Exception as e:
+                QMessageBox.warning(self, "Ошибка", f"Не удалось загрузить расписание: {e}")
 
     def show_add_event_dialog(self):
         # Диалог для добавления события
@@ -511,6 +527,20 @@ class ScheduleApp(QMainWindow):
         # Сохраняем файл
         doc.save("Расписание.docx")
         QMessageBox.information(self, "Экспорт", "Все события успешно экспортированы в Расписание.docx.")
+
+    def save_schedule_to_file(self):
+        try:
+            with open("schedule.json", "w", encoding="utf-8") as file:
+                # Преобразуем в стандартный словарь для сохранения
+                json.dump(dict(self.schedule), file, ensure_ascii=False, indent=4)
+            print("Расписание сохранено в файл.")
+        except Exception as e:
+            QMessageBox.warning(self, "Ошибка", f"Не удалось сохранить расписание: {e}")
+
+    def closeEvent(self, event):
+        self.save_schedule_to_file()
+        event.accept()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
