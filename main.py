@@ -603,7 +603,7 @@ class ScheduleApp(QMainWindow):
         if not file_name:
             return  # Если пользователь отменил, выходим
 
-        # Создаем новый документ Word
+        # Создаем новый документ
         doc = Document()
         doc.add_heading("Расписание", 0)
 
