@@ -1,4 +1,8 @@
+import spacy
 from collections import defaultdict
+
+# Загружаем модель для русского языка
+nlp = spacy.load("ru_core_news_sm")
 
 class ScheduleManager:
     def __init__(self):
@@ -31,11 +35,26 @@ class ScheduleManager:
             return self.schedule.get(date, [])
         return self.schedule
 
+    def lemmatize_text(self, text):
+        # Обрабатываем текст с помощью spacy
+        doc = nlp(text)
+        # Возвращаем леммы (нормализованные формы) слов в тексте
+        return ' '.join([token.lemma_ for token in doc])
+
     def search_events(self, search_term):
         filtered_schedule = defaultdict(list)
+        # Лемматизируем поисковый запрос
+        lemmatized_search_term = self.lemmatize_text(search_term.lower())
+
         for date, events in self.schedule.items():
             for event in events:
-                if (search_term in event['theme'].lower() or
-                        search_term in event['description'].lower()):
+                # Лемматизируем описание и тему события
+                lemmatized_theme = self.lemmatize_text(event['theme'].lower())
+                lemmatized_description = self.lemmatize_text(event['description'].lower())
+
+                # Ищем частичное совпадение с леммами
+                if (lemmatized_search_term in lemmatized_theme or
+                        lemmatized_search_term in lemmatized_description):
                     filtered_schedule[date].append(event)
+
         return filtered_schedule
