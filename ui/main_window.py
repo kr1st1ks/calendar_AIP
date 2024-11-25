@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem, QMessageBox,
     QFileDialog
 )
+from PyQt5.QtGui import QTextCharFormat, QFont, QColor
 from PyQt5.QtCore import QDate
 from data.schedule_manager import ScheduleManager
 from ui.add_event_dialog import AddEventDialog
@@ -107,6 +108,12 @@ class ScheduleApp(QMainWindow):
             }
         """)
         self.layout.addWidget(self.event_table)
+        # Обновление отображения точек при изменении месяца или выборе даты
+        self.calendar.selectionChanged.connect(self.add_event_dots)
+        self.calendar.currentPageChanged.connect(self.add_event_dots)
+
+        # Первоначальная настройка точек
+        self.add_event_dots()
 
         self.delete_event_button = QPushButton("Удалить событие")
         self.delete_event_button.setStyleSheet(
@@ -136,6 +143,20 @@ class ScheduleApp(QMainWindow):
 
         self.load_schedule_from_file()
         self.update_schedule_view()
+
+    def color_even_days(self):
+        """
+        Colors the even days in the calendar widget.
+        """
+        current_month = self.calendar.selectedDate().month()
+        current_year = self.calendar.selectedDate().year()
+
+        # Loop through all the days of the month
+        for day in range(1, 32):
+            date = QDate(current_year, current_month, day)
+            if date.month() == current_month and date.day() % 2 == 0:  # Check if day is even
+                style = f"QCalendarWidget QAbstractItemView::item:checked {{ background-color: #ffeb3b; }}"
+                self.calendar.setStyleSheet(style)
 
     def load_schedule_from_file(self):
         load_schedule_from_file(self.schedule_manager)
@@ -175,6 +196,29 @@ class ScheduleApp(QMainWindow):
         dialog = EditEventDialog(date, start_time, end_time, theme, description, self.schedule_manager)
         dialog.exec()  # Исправлено с dialog.exec_() на dialog.exec()
         self.update_schedule_view()
+        self.add_even_day_dots()
+
+    def add_event_dots(self):
+        """
+        Добавляет красную точку над днями с событиями.
+        """
+        # Очищаем старые текстовые форматы
+        self.calendar.setDateTextFormat(QDate(), QTextCharFormat())
+
+        # Настройка текста для дней с событиями
+        text_format = QTextCharFormat()
+        font = QFont()
+        font.setBold(True)
+        text_format.setFont(font)
+        text_format.setFontUnderline(True)
+        style = f"QCalendarWidget QAbstractItemView::item:checked {{ background-color: #ffeb3b; }}"
+        self.calendar.setStyleSheet(style)
+
+        # Применяем точки для дат с событиями
+        for date_str in self.schedule_manager.get_schedule():
+            date = QDate.fromString(date_str, "yyyy-MM-dd")
+            if date.isValid():
+                self.calendar.setDateTextFormat(date, text_format)
 
     def show_view_schedule_dialog(self):
         dialog = ViewScheduleDialog(self.schedule_manager)
