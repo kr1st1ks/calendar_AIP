@@ -1,10 +1,10 @@
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
-    QPushButton, QLabel, QLineEdit, QCalendarWidget, QTableWidget,
-    QTableWidgetItem, QTimeEdit, QTextEdit, QMessageBox, QComboBox,
+    QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
+    QPushButton, QLineEdit, QCalendarWidget, QTableWidget,
+    QTableWidgetItem, QMessageBox,
     QFileDialog
 )
-from PyQt5.QtCore import QTime, QDate
+from PyQt5.QtCore import QDate
 from data.schedule_manager import ScheduleManager
 from ui.add_event_dialog import AddEventDialog
 from ui.edit_event_dialog import EditEventDialog
@@ -79,6 +79,8 @@ class ScheduleApp(QMainWindow):
             }
         """)
         self.calendar.clicked.connect(self.update_schedule_view)
+        self.calendar.setMinimumDate(QDate(1, 1, 1))
+        self.calendar.setMaximumDate(QDate(9999, 1, 1))
         self.layout.addWidget(self.calendar)
 
         self.event_table = QTableWidget()
