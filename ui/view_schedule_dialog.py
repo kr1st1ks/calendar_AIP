@@ -6,6 +6,117 @@ from PyQt5.QtCore import QDate
 class ViewScheduleDialog(QDialog):  # Изменено с QWidget на QDialog
     def __init__(self, schedule_manager):
         super().__init__()
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #F5FFFA; /* Светлый оттенок зелени для заднего фона */
+            }
+
+            QPushButton {
+                background-color: #6B8E23; /* Мшистый зеленый */
+                color: white;
+                font-size: 14px;
+                padding: 10px;
+                border-radius: 5px;
+            }
+
+            QPushButton:hover {
+                background-color: #228B22; /* Темно-зеленый при наведении */
+            }
+
+            QPushButton:pressed {
+                background-color: #8B4513; /* Землистый коричневый при нажатии */
+            }
+
+            QCalendarWidget {
+                background-color: #F0FFF0; /* Очень светло-зеленый */
+                border: 1px solid #6B8E23;
+                font-size: 14px;
+                color: #2E8B57; /* Темно-зеленый для текста */
+            }
+
+            QCalendarWidget QAbstractItemView {
+                selection-background-color: #90EE90; /* Светло-зеленый для выделения */
+                gridline-color: #6B8E23;
+                border: 1px solid #6B8E23;
+            }
+
+            QCalendarWidget QToolButton {
+                background-color: #228B22; /* Темно-зеленый */
+                color: white;
+                font-weight: bold;
+                border: none;
+                padding: 10px;
+            }
+
+            QCalendarWidget QToolButton:hover {
+                background-color: #6B8E23; /* Мшистый зеленый */
+            }
+
+            QCalendarWidget QToolButton:pressed {
+                background-color: #8B4513; /* Землистый коричневый */
+            }
+
+            QCalendarWidget QHeaderView::section {
+                background-color: #6B8E23; /* Мшистый зеленый */
+                color: white;
+                font-size: 16px;
+                padding: 10px;
+                border: none;
+                text-align: center;
+            }
+
+            QCalendarWidget QTextCharFormat {
+                color: #2E8B57;
+            }
+
+            QTableWidget {
+                border: 1px solid #8B4513;
+                font-size: 14px;
+                background-color: #F0FFF0;
+                gridline-color: #6B8E23;
+            }
+
+            QTableWidget::item {
+                padding: 10px;
+            }
+
+            QTableWidget::item:hover {
+                background-color: #90EE90;
+            }
+
+            QHeaderView::section {
+                background-color: #6B8E23;
+                color: white;
+                font-size: 16px;
+                padding: 10px;
+            }
+
+            QLineEdit {
+                border: 1px solid #6B8E23;
+                border-radius: 5px;
+                padding: 8px;
+                background-color: #FFFFFF;
+                color: #2E8B57;
+                font-size: 14px;
+            }
+
+            QLineEdit:focus {
+                border: 2px solid #228B22;
+            }
+
+            QMessageBox {
+                background-color: #F5FFFA;
+                color: #2E8B57;
+                font-size: 14px;
+            }
+
+            QFileDialog {
+                background-color: #F5FFFA;
+                color: #2E8B57;
+                font-size: 14px;
+            }
+        """)
+
         self.schedule_manager = schedule_manager
         self.setWindowTitle("Просмотреть расписание")
         self.layout = QVBoxLayout()

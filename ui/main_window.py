@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem, QMessageBox,
     QFileDialog
 )
-from PyQt5.QtGui import QTextCharFormat, QFont, QColor
+from PyQt5.QtGui import QTextCharFormat, QFont
 from PyQt5.QtCore import QDate
 from data.schedule_manager import ScheduleManager
 from ui.add_event_dialog import AddEventDialog
@@ -155,37 +155,6 @@ class ScheduleApp(QMainWindow):
         self.button_layout.addWidget(self.export_button)
 
         self.calendar = QCalendarWidget()
-        self.calendar.setStyleSheet("""
-            QCalendarWidget {
-                background-color: #ffffff;
-                border: 1px solid #6B8E23;
-                font-size: 14px;
-            }
-            QCalendarWidget QAbstractItemView {
-                selection-background-color: #90EE90;
-            }
-            QCalendarWidget QToolButton {
-                background-color: #228B22;
-                color: white;
-                font-weight: bold;
-                border: none;
-                padding: 10px;
-            }
-            QCalendarWidget QToolButton:hover {
-                background-color: #6B8E23;
-            }
-            QCalendarWidget QToolButton:pressed {
-                background-color: #8B4513;
-            }
-            QCalendarWidget QHeaderView::section {
-                background-color: #6B8E23;
-                color: white;
-                font-size: 16px;
-                padding: 10px;
-                border: none;
-                text-align: center;
-            }
-        """)
         self.calendar.clicked.connect(self.update_schedule_view)
         self.calendar.setMinimumDate(QDate(1, 1, 1))
         self.calendar.setMaximumDate(QDate(9999, 1, 1))
@@ -194,26 +163,6 @@ class ScheduleApp(QMainWindow):
         self.event_table = QTableWidget()
         self.event_table.setColumnCount(5)
         self.event_table.setHorizontalHeaderLabels(["Дата", "Начало", "Конец", "Тема", "Описание"])
-        self.event_table.setStyleSheet("""
-            QTableWidget {
-                border: 1px solid #8B4513;
-                font-size: 14px;
-                background-color: #F0FFF0;  /* Очень светло-зеленый */
-                gridline-color: #6B8E23;
-            }
-            QTableWidget::item {
-                padding: 10px;
-            }
-            QTableWidget::item:hover {
-                background-color: #90EE90; /* Светло-зеленый */
-            }
-            QHeaderView::section {
-                background-color: #228B22;
-                color: white;
-                font-size: 16px;
-                padding: 10px;
-            }
-        """)
         self.layout.addWidget(self.event_table)
         # Обновление отображения точек при изменении месяца или выборе даты
         self.calendar.selectionChanged.connect(self.add_event_dots)
@@ -234,13 +183,7 @@ class ScheduleApp(QMainWindow):
         self.layout.addWidget(self.delete_event_button)
 
         self.edit_event_button = QPushButton("Редактировать событие")
-        self.edit_event_button.setStyleSheet("""
-            background-color: #6B8E23; 
-            color: white; 
-            font-size: 14px; 
-            padding: 10px; 
-            border-radius: 5px;
-        """)
+
         self.edit_event_button.clicked.connect(self.edit_event)
         self.layout.addWidget(self.edit_event_button)
 
@@ -252,8 +195,6 @@ class ScheduleApp(QMainWindow):
         self.search_layout.addWidget(self.search_input)
 
         self.search_button = QPushButton("Поиск")
-        self.search_button.setStyleSheet(
-            "background-color: #FFA726; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
         self.search_button.clicked.connect(self.search_events)
         self.search_layout.addWidget(self.search_button)
         self.search_input.returnPressed.connect(self.search_button.click)
