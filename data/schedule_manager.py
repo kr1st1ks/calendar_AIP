@@ -51,6 +51,7 @@ class ScheduleManager:
                 # Лемматизируем описание и тему события
                 lemmatized_theme = self.lemmatize_text(event['theme'].lower())
                 lemmatized_description = self.lemmatize_text(event['description'].lower())
+                print(lemmatized_theme,lemmatized_description,lemmatized_search_term)
 
                 # Ищем частичное совпадение с леммами
                 if (lemmatized_search_term in lemmatized_theme or

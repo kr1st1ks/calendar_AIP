@@ -18,6 +18,116 @@ class ScheduleApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("Планировщик расписания")
         self.setGeometry(100, 100, 800, 600)
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #F5FFFA; /* Светлый оттенок зелени для заднего фона */
+            }
+
+            QPushButton {
+                background-color: #6B8E23; /* Мшистый зеленый */
+                color: white;
+                font-size: 14px;
+                padding: 10px;
+                border-radius: 5px;
+            }
+
+            QPushButton:hover {
+                background-color: #228B22; /* Темно-зеленый при наведении */
+            }
+
+            QPushButton:pressed {
+                background-color: #8B4513; /* Землистый коричневый при нажатии */
+            }
+
+            QCalendarWidget {
+                background-color: #F0FFF0; /* Очень светло-зеленый */
+                border: 1px solid #6B8E23;
+                font-size: 14px;
+                color: #2E8B57; /* Темно-зеленый для текста */
+            }
+
+            QCalendarWidget QAbstractItemView {
+                selection-background-color: #90EE90; /* Светло-зеленый для выделения */
+                gridline-color: #6B8E23;
+                border: 1px solid #6B8E23;
+            }
+
+            QCalendarWidget QToolButton {
+                background-color: #228B22; /* Темно-зеленый */
+                color: white;
+                font-weight: bold;
+                border: none;
+                padding: 10px;
+            }
+
+            QCalendarWidget QToolButton:hover {
+                background-color: #6B8E23; /* Мшистый зеленый */
+            }
+
+            QCalendarWidget QToolButton:pressed {
+                background-color: #8B4513; /* Землистый коричневый */
+            }
+
+            QCalendarWidget QHeaderView::section {
+                background-color: #6B8E23; /* Мшистый зеленый */
+                color: white;
+                font-size: 16px;
+                padding: 10px;
+                border: none;
+                text-align: center;
+            }
+
+            QCalendarWidget QTextCharFormat {
+                color: #2E8B57;
+            }
+
+            QTableWidget {
+                border: 1px solid #8B4513;
+                font-size: 14px;
+                background-color: #F0FFF0;
+                gridline-color: #6B8E23;
+            }
+
+            QTableWidget::item {
+                padding: 10px;
+            }
+
+            QTableWidget::item:hover {
+                background-color: #90EE90;
+            }
+
+            QHeaderView::section {
+                background-color: #6B8E23;
+                color: white;
+                font-size: 16px;
+                padding: 10px;
+            }
+
+            QLineEdit {
+                border: 1px solid #6B8E23;
+                border-radius: 5px;
+                padding: 8px;
+                background-color: #FFFFFF;
+                color: #2E8B57;
+                font-size: 14px;
+            }
+
+            QLineEdit:focus {
+                border: 2px solid #228B22;
+            }
+
+            QMessageBox {
+                background-color: #F5FFFA;
+                color: #2E8B57;
+                font-size: 14px;
+            }
+
+            QFileDialog {
+                background-color: #F5FFFA;
+                color: #2E8B57;
+                font-size: 14px;
+            }
+        """)
 
         self.schedule_manager = ScheduleManager()
 
@@ -30,20 +140,17 @@ class ScheduleApp(QMainWindow):
         self.layout.addLayout(self.button_layout)
 
         self.add_event_button = QPushButton("Добавить событие")
-        self.add_event_button.setStyleSheet(
-            "background-color: #4CAF50; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+
         self.add_event_button.clicked.connect(self.show_add_event_dialog)
         self.button_layout.addWidget(self.add_event_button)
 
         self.view_schedule_button = QPushButton("Просмотреть расписание")
-        self.view_schedule_button.setStyleSheet(
-            "background-color: #2196F3; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+
         self.view_schedule_button.clicked.connect(self.show_view_schedule_dialog)
         self.button_layout.addWidget(self.view_schedule_button)
 
         self.export_button = QPushButton("Экспортировать в .docx")
-        self.export_button.setStyleSheet(
-            "background-color: #FFC107; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+
         self.export_button.clicked.connect(self.export_to_docx)
         self.button_layout.addWidget(self.export_button)
 
@@ -51,27 +158,27 @@ class ScheduleApp(QMainWindow):
         self.calendar.setStyleSheet("""
             QCalendarWidget {
                 background-color: #ffffff;
-                border: 1px solid #ddd;
+                border: 1px solid #6B8E23;
                 font-size: 14px;
             }
             QCalendarWidget QAbstractItemView {
-                selection-background-color: #4CAF50;
+                selection-background-color: #90EE90;
             }
             QCalendarWidget QToolButton {
-                background-color: #4CAF50;
+                background-color: #228B22;
                 color: white;
                 font-weight: bold;
                 border: none;
                 padding: 10px;
             }
             QCalendarWidget QToolButton:hover {
-                background-color: #45a049;
+                background-color: #6B8E23;
             }
             QCalendarWidget QToolButton:pressed {
-                background-color: #3e8e41;
+                background-color: #8B4513;
             }
             QCalendarWidget QHeaderView::section {
-                background-color: #2196F3;
+                background-color: #6B8E23;
                 color: white;
                 font-size: 16px;
                 padding: 10px;
@@ -89,19 +196,19 @@ class ScheduleApp(QMainWindow):
         self.event_table.setHorizontalHeaderLabels(["Дата", "Начало", "Конец", "Тема", "Описание"])
         self.event_table.setStyleSheet("""
             QTableWidget {
-                border: 1px solid #ddd;
+                border: 1px solid #8B4513;
                 font-size: 14px;
-                background-color: #f9f9f9;
-                gridline-color: #ddd;
+                background-color: #F0FFF0;  /* Очень светло-зеленый */
+                gridline-color: #6B8E23;
             }
             QTableWidget::item {
                 padding: 10px;
             }
             QTableWidget::item:hover {
-                background-color: #f1f1f1;
+                background-color: #90EE90; /* Светло-зеленый */
             }
             QHeaderView::section {
-                background-color: #4CAF50;
+                background-color: #228B22;
                 color: white;
                 font-size: 16px;
                 padding: 10px;
@@ -116,14 +223,24 @@ class ScheduleApp(QMainWindow):
         self.add_event_dots()
 
         self.delete_event_button = QPushButton("Удалить событие")
-        self.delete_event_button.setStyleSheet(
-            "background-color: #f44336; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+        self.delete_event_button.setStyleSheet("""
+            background-color: #8B0000; 
+            color: white; 
+            font-size: 14px; 
+            padding: 10px; 
+            border-radius: 5px;
+        """)
         self.delete_event_button.clicked.connect(self.delete_event)
         self.layout.addWidget(self.delete_event_button)
 
         self.edit_event_button = QPushButton("Редактировать событие")
-        self.edit_event_button.setStyleSheet(
-            "background-color: #009688; color: white; font-size: 14px; padding: 10px; border-radius: 5px;")
+        self.edit_event_button.setStyleSheet("""
+            background-color: #6B8E23; 
+            color: white; 
+            font-size: 14px; 
+            padding: 10px; 
+            border-radius: 5px;
+        """)
         self.edit_event_button.clicked.connect(self.edit_event)
         self.layout.addWidget(self.edit_event_button)
 
@@ -143,20 +260,7 @@ class ScheduleApp(QMainWindow):
 
         self.load_schedule_from_file()
         self.update_schedule_view()
-
-    def color_even_days(self):
-        """
-        Colors the even days in the calendar widget.
-        """
-        current_month = self.calendar.selectedDate().month()
-        current_year = self.calendar.selectedDate().year()
-
-        # Loop through all the days of the month
-        for day in range(1, 32):
-            date = QDate(current_year, current_month, day)
-            if date.month() == current_month and date.day() % 2 == 0:  # Check if day is even
-                style = f"QCalendarWidget QAbstractItemView::item:checked {{ background-color: #ffeb3b; }}"
-                self.calendar.setStyleSheet(style)
+        self.add_event_dots()
 
     def load_schedule_from_file(self):
         load_schedule_from_file(self.schedule_manager)
@@ -196,7 +300,7 @@ class ScheduleApp(QMainWindow):
         dialog = EditEventDialog(date, start_time, end_time, theme, description, self.schedule_manager)
         dialog.exec()  # Исправлено с dialog.exec_() на dialog.exec()
         self.update_schedule_view()
-        self.add_even_day_dots()
+        self.add_event_dots()
 
     def add_event_dots(self):
         """
@@ -211,8 +315,6 @@ class ScheduleApp(QMainWindow):
         font.setBold(True)
         text_format.setFont(font)
         text_format.setFontUnderline(True)
-        style = f"QCalendarWidget QAbstractItemView::item:checked {{ background-color: #ffeb3b; }}"
-        self.calendar.setStyleSheet(style)
 
         # Применяем точки для дат с событиями
         for date_str in self.schedule_manager.get_schedule():
