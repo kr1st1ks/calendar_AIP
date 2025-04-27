@@ -1,6 +1,7 @@
 import re
 from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTimeEdit, QTextEdit, QPushButton, QMessageBox, QComboBox
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTimeEdit,
+    QTextEdit, QPushButton, QMessageBox, QComboBox
 )
 from PyQt5.QtCore import QTime, QDate
 
@@ -9,113 +10,61 @@ class AddEventDialog(QDialog):
     def __init__(self, date, schedule_manager):
         super().__init__()
         self.setStyleSheet("""
-            QMainWindow {
-                background-color: #F5FFFA; /* Светлый оттенок зелени для заднего фона */
+            QDialog {
+                background-color: rgb(230, 224, 200);
+                font-size: 14px;
+            }
+
+            QLabel {
+                color: rgb(62, 93, 7);
+                font-weight: bold;
             }
 
             QPushButton {
-                background-color: #6B8E23; /* Мшистый зеленый */
-                color: white;
-                font-size: 14px;
-                padding: 10px;
+                background-color: rgb(62, 93, 7); 
+                color: white; 
+                font-size: 14px; 
+                padding: 10px; 
                 border-radius: 5px;
             }
 
             QPushButton:hover {
-                background-color: #228B22; /* Темно-зеленый при наведении */
+                background-color: rgb(62, 84, 7);
             }
 
             QPushButton:pressed {
-                background-color: #8B4513; /* Землистый коричневый при нажатии */
+                background-color: rgb(139, 93, 36);
             }
 
-            QCalendarWidget {
-                background-color: #F0FFF0; /* Очень светло-зеленый */
-                border: 1px solid #6B8E23;
-                font-size: 14px;
-                color: #2E8B57; /* Темно-зеленый для текста */
-            }
-
-            QCalendarWidget QAbstractItemView {
-                selection-background-color: #90EE90; /* Светло-зеленый для выделения */
-                gridline-color: #6B8E23;
-                border: 1px solid #6B8E23;
-            }
-
-            QCalendarWidget QToolButton {
-                background-color: #228B22; /* Темно-зеленый */
-                color: white;
-                font-weight: bold;
-                border: none;
-                padding: 10px;
-            }
-
-            QCalendarWidget QToolButton:hover {
-                background-color: #6B8E23; /* Мшистый зеленый */
-            }
-
-            QCalendarWidget QToolButton:pressed {
-                background-color: #8B4513; /* Землистый коричневый */
-            }
-
-            QCalendarWidget QHeaderView::section {
-                background-color: #6B8E23; /* Мшистый зеленый */
-                color: white;
-                font-size: 16px;
-                padding: 10px;
-                border: none;
-                text-align: center;
-            }
-
-            QCalendarWidget QTextCharFormat {
-                color: #2E8B57;
-            }
-
-            QTableWidget {
-                border: 1px solid #8B4513;
-                font-size: 14px;
-                background-color: #F0FFF0;
-                gridline-color: #6B8E23;
-            }
-
-            QTableWidget::item {
-                padding: 10px;
-            }
-
-            QTableWidget::item:hover {
-                background-color: #90EE90;
-            }
-
-            QHeaderView::section {
-                background-color: #6B8E23;
-                color: white;
-                font-size: 16px;
-                padding: 10px;
-            }
-
-            QLineEdit {
-                border: 1px solid #6B8E23;
+            QLineEdit, QTextEdit, QComboBox, QTimeEdit {
+                background-color: white;
+                border: 1px solid rgb(139, 93, 36);
                 border-radius: 5px;
                 padding: 8px;
-                background-color: #FFFFFF;
-                color: #2E8B57;
                 font-size: 14px;
             }
 
-            QLineEdit:focus {
-                border: 2px solid #228B22;
+            QLineEdit:focus, QTextEdit:focus, QComboBox:focus, QTimeEdit:focus {
+                border: 2px solid rgb(62, 93, 7);
+            }
+
+            QComboBox QAbstractItemView {
+                background-color: white;
+                selection-background-color: rgb(230, 224, 200);
+                border: 1px solid rgb(139, 93, 36);
             }
 
             QMessageBox {
-                background-color: #F5FFFA;
-                color: #2E8B57;
-                font-size: 14px;
+                background-color: rgb(230, 224, 200);
             }
 
-            QFileDialog {
-                background-color: #F5FFFA;
-                color: #2E8B57;
-                font-size: 14px;
+            QMessageBox QLabel {
+                color: black;
+                font-weight: normal;
+            }
+
+            QMessageBox QPushButton {
+                min-width: 80px;
             }
         """)
 
@@ -137,23 +86,27 @@ class AddEventDialog(QDialog):
         # Поле для даты
         date_label = QLabel("Дата:")
         self.layout.addWidget(date_label)
+        self.date_input.setReadOnly(True)
         self.layout.addWidget(self.date_input)
 
         # Поля для времени
+        time_layout = QHBoxLayout()
+
+        start_time_group = QVBoxLayout()
         start_time_label = QLabel("Время начала:")
-        self.layout.addWidget(start_time_label)
+        start_time_group.addWidget(start_time_label)
         self.start_time_input.setTime(QTime(9, 0))
-        self.layout.addWidget(self.start_time_input)
+        start_time_group.addWidget(self.start_time_input)
+        time_layout.addLayout(start_time_group)
 
+        end_time_group = QVBoxLayout()
         end_time_label = QLabel("Время окончания:")
-        self.layout.addWidget(end_time_label)
+        end_time_group.addWidget(end_time_label)
         self.end_time_input.setTime(QTime(10, 0))
-        self.layout.addWidget(self.end_time_input)
+        end_time_group.addWidget(self.end_time_input)
+        time_layout.addLayout(end_time_group)
 
-        # Поле для описания
-        description_label = QLabel("Описание:")
-        self.layout.addWidget(description_label)
-        self.layout.addWidget(self.description_input)
+        self.layout.addLayout(time_layout)
 
         # Поле для выбора темы
         theme_label = QLabel("Тема:")
@@ -168,11 +121,36 @@ class AddEventDialog(QDialog):
             self.theme_input.addItem(theme)
         self.layout.addWidget(self.theme_input)
 
+        # Поле для описания
+        description_label = QLabel("Описание:")
+        self.layout.addWidget(description_label)
+        self.description_input.setPlaceholderText("Введите описание события...")
+        self.layout.addWidget(self.description_input)
+
         # Кнопки
         button_layout = QHBoxLayout()
         self.layout.addLayout(button_layout)
+
         add_button = QPushButton("Добавить")
+        add_button.setStyleSheet("""
+            QPushButton {
+                background-color: rgb(62, 93, 7);
+            }
+            QPushButton:hover {
+                background-color: rgb(62, 84, 7);
+            }
+        """)
+
         cancel_button = QPushButton("Отмена")
+        cancel_button.setStyleSheet("""
+            QPushButton {
+                background-color: rgb(139, 93, 36);
+            }
+            QPushButton:hover {
+                background-color: rgb(122, 80, 28);
+            }
+        """)
+
         button_layout.addWidget(add_button)
         button_layout.addWidget(cancel_button)
 
