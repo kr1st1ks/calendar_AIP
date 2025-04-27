@@ -1,124 +1,135 @@
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QCalendarWidget, QTableWidget, QTableWidgetItem, QPushButton, QComboBox
 )
-from PyQt5.QtCore import QDate
+from PyQt5.QtCore import QDate, Qt, QRect
+from PyQt5.QtGui import QTextCharFormat, QBrush, QColor, QFont
 
-class ViewScheduleDialog(QDialog):  # Изменено с QWidget на QDialog
+
+class RoundedCalendar(QCalendarWidget):
+    def paintCell(self, painter, rect, date):
+        if date == self.selectedDate():
+            painter.setBrush(QBrush(QColor(139, 93, 36)))  # Цвет фона выделенной ячейки
+        else:
+            painter.setBrush(QBrush(QColor(240, 240, 240)))  # Обычный фон
+
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(rect, 5, 5)  # Скругленные углы
+
+        if date.month() != self.monthShown():  # Дни предыдущего или следующего месяца
+            text_color = QColor(180, 180, 180)  # Более бледный цвет
+        elif date.dayOfWeek() in [6, 7]:  # Суббота и воскресенье
+            text_color = Qt.red
+        else:
+            text_color = Qt.black if date != self.selectedDate() else Qt.white
+
+        painter.setPen(text_color)
+        # Уменьшаем отступы и увеличиваем область текста
+        text_rect = QRect(rect.x() + 3, rect.y() + 5, rect.width() - 6, rect.height() - 10)
+        # Увеличиваем шрифт для цифр
+        font = QFont()
+        font.setPixelSize(14)  # Увеличиваем размер шрифта
+        painter.setFont(font)
+        painter.drawText(text_rect, Qt.AlignRight | Qt.AlignTop, str(date.day()))
+
+
+class ViewScheduleDialog(QDialog):
     def __init__(self, schedule_manager):
         super().__init__()
+        self.schedule_manager = schedule_manager
+        self.setWindowTitle("Просмотреть расписание")
         self.setStyleSheet("""
-            QMainWindow {
-                background-color: #F5FFFA; /* Светлый оттенок зелени для заднего фона */
+            QDialog {
+                background-color: rgb(240, 240, 240);
             }
-
+            QLabel {
+                font-size: 14px;
+                color: rgb(62, 93, 7);
+            }
             QPushButton {
-                background-color: #6B8E23; /* Мшистый зеленый */
+                background-color: rgb(62, 93, 7);
                 color: white;
                 font-size: 14px;
                 padding: 10px;
                 border-radius: 5px;
             }
-
             QPushButton:hover {
-                background-color: #228B22; /* Темно-зеленый при наведении */
+                background-color: rgb(62, 84, 7);
             }
-
-            QPushButton:pressed {
-                background-color: #8B4513; /* Землистый коричневый при нажатии */
-            }
-
-            QCalendarWidget {
-                background-color: #F0FFF0; /* Очень светло-зеленый */
-                border: 1px solid #6B8E23;
-                font-size: 14px;
-                color: #2E8B57; /* Темно-зеленый для текста */
-            }
-
-            QCalendarWidget QAbstractItemView {
-                selection-background-color: #90EE90; /* Светло-зеленый для выделения */
-                gridline-color: #6B8E23;
-                border: 1px solid #6B8E23;
-            }
-
-            QCalendarWidget QToolButton {
-                background-color: #228B22; /* Темно-зеленый */
-                color: white;
-                font-weight: bold;
-                border: none;
-                padding: 10px;
-            }
-
-            QCalendarWidget QToolButton:hover {
-                background-color: #6B8E23; /* Мшистый зеленый */
-            }
-
-            QCalendarWidget QToolButton:pressed {
-                background-color: #8B4513; /* Землистый коричневый */
-            }
-
-            QCalendarWidget QHeaderView::section {
-                background-color: #6B8E23; /* Мшистый зеленый */
-                color: white;
-                font-size: 16px;
-                padding: 10px;
-                border: none;
-                text-align: center;
-            }
-
-            QCalendarWidget QTextCharFormat {
-                color: #2E8B57;
-            }
-
             QTableWidget {
-                border: 1px solid #8B4513;
+                border: 1px solid #ddd;
                 font-size: 14px;
-                background-color: #F0FFF0;
-                gridline-color: #6B8E23;
+                background-color: rgb(230, 224, 200);
+                gridline-color: #ddd;
+                padding: 5px;
+                border-radius: 5px;
+                outline: 0px;
             }
-
+            QTableCornerButton::section {
+                background-color: rgb(230, 224, 200);
+            }
             QTableWidget::item {
                 padding: 10px;
+                outline: 0px;
             }
-
             QTableWidget::item:hover {
-                background-color: #90EE90;
+                background-color: #f1f1f1;
+                padding: 10px;
+                border-radius: 5px;
+                outline: 0px;
             }
-
+            QTableWidget::item:selected:enabled {
+                background-color: #f1f1f1;
+                padding: 10px;
+                border-radius: 5px;
+                outline: 0px;
+                color: black;
+                border: none;
+            }
+            QHeaderView {
+                background-color: rgb(230, 224, 200);
+            }
             QHeaderView::section {
-                background-color: #6B8E23;
+                background-color: rgb(62, 93, 7);
                 color: white;
                 font-size: 16px;
-                padding: 10px;
-            }
-
-            QLineEdit {
-                border: 1px solid #6B8E23;
+                padding: 10px 10px;
+                margin: 1px;
                 border-radius: 5px;
+                min-height: 20px;
+                max-height: 20px;
+                outline: 1px;
+            }
+            QHeaderView::section:hover {
+                background-color: rgb(62, 84, 7);
+                outline: 5px;
+            }
+            QComboBox {
+                background-color: rgb(230, 224, 200);
+                color: rgb(62, 93, 7);
+                font-size: 14px;
                 padding: 8px;
-                background-color: #FFFFFF;
-                color: #2E8B57;
-                font-size: 14px;
+                border-radius: 5px;
+                border: 1px solid #ddd;
             }
-
-            QLineEdit:focus {
-                border: 2px solid #228B22;
+            QComboBox:hover {
+                background-color: rgb(209, 201, 169);
             }
-
-            QMessageBox {
-                background-color: #F5FFFA;
-                color: #2E8B57;
-                font-size: 14px;
+            QComboBox::drop-down {
+                border: none;
             }
-
-            QFileDialog {
-                background-color: #F5FFFA;
-                color: #2E8B57;
-                font-size: 14px;
+            QComboBox::down-arrow {
+                image: none;
+                width: 10px;
+                height: 10px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: rgb(230, 224, 200);
+                color: rgb(62, 93, 7);
+                selection-background-color: rgb(209, 201, 169);
+                border-radius: 5px;
             }
         """)
 
-        self.schedule_manager = schedule_manager
-        self.setWindowTitle("Просмотреть расписание")
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
@@ -127,8 +138,89 @@ class ViewScheduleDialog(QDialog):  # Изменено с QWidget на QDialog
 
         start_date_label = QLabel("Выберите дату начала:")
         filter_layout.addWidget(start_date_label)
-        start_date_input = QCalendarWidget()
+        start_date_input = RoundedCalendar()
         start_date_input.setSelectedDate(QDate.currentDate())
+        # Увеличиваем минимальный размер календаря
+        start_date_input.setMinimumSize(400, 300)
+        start_date_input.setGridVisible(True)  # Включаем сетку для лучшей читаемости
+        start_date_input.setStyleSheet("""
+            #qt_calendar_navigationbar {
+                background-color: rgb(139, 93, 36);
+                min-height: 60px;
+                max-height: 60px;
+                padding: 10px;
+                border-radius: 5px;
+            }
+            #qt_calendar_prevmonth, #qt_calendar_nextmonth {
+                border: none;
+                margin-top: 0px;
+                color: white;
+                min-width: 50px;
+                max-width: 50px;
+                min-height: 50px;
+                max-height: 50px;
+                border-radius: 18px;
+                font-weight: bold;
+                qproperty-icon: none;
+                background-color: transparent;
+            }
+            #qt_calendar_prevmonth {
+                qproperty-text: "<-";
+            }
+            #qt_calendar_nextmonth {
+                qproperty-text: "->";
+            }
+            #qt_calendar_prevmonth:hover, #qt_calendar_nextmonth:hover {
+                background-color: rgba(225, 225, 225, 100);
+            }
+            #qt_calendar_prevmonth:pressed, #qt_calendar_nextmonth:pressed {
+                background-color: rgba(235, 235, 235, 100);
+            }
+            #qt_calendar_yearbutton, #qt_calendar_monthbutton {
+                color: white;
+                margin: 18px;
+                min-width: 100px;
+                max-width: 100px;
+                border-radius: 18px;
+            }
+            #qt_calendar_yearbutton:hover, #qt_calendar_monthbutton:hover {
+                background-color: rgba(225, 225, 225, 100);
+            }
+            #qt_calendar_yearbutton:pressed, #qt_calendar_monthbutton:pressed {
+                background-color: rgba(235, 235, 235, 100);
+            }
+            #qt_calendar_yearedit {
+                min-width: 100px;
+                max-width: 100px;
+                color: white;
+                background: transparent;
+            }
+            #qt_calendar_yearedit::up-button {
+                width: 30px;
+                subcontrol-position: right;
+            }
+            #qt_calendar_yearedit::down-button {
+                width: 30px;
+                subcontrol-position: left;
+            }
+            CalendarWidget QToolButton QMenu {
+                background-color: white;
+            }
+            CalendarWidget QToolButton QMenu::item {
+                padding: 10px;
+            }
+            CalendarWidget QToolButton QMenu::item:selected:enabled {
+                background-color: rgb(230, 230, 230);
+            }
+            CalendarWidget QToolButton::menu-indicator {
+                image: none;
+                subcontrol-position: right center;
+            }
+            #qt_calendar_calendarview {
+                outline: 5px;
+                selection-background-color: rgb(139, 93, 36);
+            }
+        """)
         filter_layout.addWidget(start_date_input)
 
         range_label = QLabel("Выберите диапазон:")
