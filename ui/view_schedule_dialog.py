@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QCalendarWidget, QTableWidget, QTableWidgetItem, QPushButton, QComboBox
+    QDialog, QVBoxLayout, QHBoxLayout, QCalendarWidget, QTableWidget, QTableWidgetItem, QPushButton
 )
 from PyQt5.QtCore import QDate, Qt, QRect
-from PyQt5.QtGui import QTextCharFormat, QBrush, QColor, QFont
+from PyQt5.QtGui import QBrush, QColor, QFont
 
 from ui.add_event_dialog import CustomComboBox, ColorDelegate
 

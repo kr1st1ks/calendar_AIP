@@ -1,10 +1,9 @@
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
-    QPushButton, QLabel, QLineEdit, QCalendarWidget, QTableWidget,
-    QTableWidgetItem, QTimeEdit, QTextEdit, QMessageBox, QComboBox,
-    QFileDialog, QSplitter, QFrame
+    QPushButton, QLineEdit, QCalendarWidget, QTableWidget,
+    QTableWidgetItem, QMessageBox, QFileDialog
 )
-from PyQt5.QtCore import Qt, QTime, QDate, QRect
+from PyQt5.QtCore import Qt, QDate, QRect
 from PyQt5.QtGui import QTextCharFormat, QBrush, QColor, QFont
 from data.schedule_manager import ScheduleManager
 from ui.add_event_dialog import AddEventDialog

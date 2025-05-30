@@ -1,9 +1,9 @@
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTimeEdit,
-    QTextEdit, QPushButton, QMessageBox, QComboBox, QColorDialog
+    QTextEdit, QPushButton, QMessageBox, QColorDialog
 )
-from PyQt5.QtCore import QTime, QDate, Qt
+from PyQt5.QtCore import QTime
 from ui.add_event_dialog import ColorDelegate, CustomComboBox
 
 class EditEventDialog(QDialog):

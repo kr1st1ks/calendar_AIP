@@ -1,13 +1,11 @@
 import re
 
-from PyQt5 import QtGui
-from PyQt5.QtGui import QPixmap, QPainter, QColor, QPen, QBrush
+from PyQt5.QtGui import QPainter, QColor, QPen, QBrush
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTimeEdit,
     QTextEdit, QPushButton, QMessageBox, QComboBox, QStyle, QStyledItemDelegate, QColorDialog
 )
 from PyQt5.QtCore import QTime, QDate, Qt, QRectF
-from PyQt5.uic.uiparser import QtWidgets
 
 
 class ColorDelegate(QStyledItemDelegate):
