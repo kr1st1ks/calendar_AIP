@@ -1,14 +1,108 @@
 import re
+
+from PyQt5 import QtGui
+from PyQt5.QtGui import QPixmap, QPainter, QColor, QPen, QBrush
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTimeEdit,
-    QTextEdit, QPushButton, QMessageBox, QComboBox
+    QTextEdit, QPushButton, QMessageBox, QComboBox, QStyle, QStyledItemDelegate, QColorDialog
 )
-from PyQt5.QtCore import QTime, QDate
+from PyQt5.QtCore import QTime, QDate, Qt, QRectF
+from PyQt5.uic.uiparser import QtWidgets
+
+
+class ColorDelegate(QStyledItemDelegate):
+    """ Кастомный делегат для изменения цвета фона каждого элемента в QComboBox """
+
+    def paint(self, painter, option, index):
+        # Получаем цвет элемента (мы его сохранили в UserRole)
+        color = index.data(Qt.UserRole)
+        base_color = QColor(color)
+
+        # Проверяем, наведен ли курсор
+        if option.state & QStyle.State_MouseOver:
+            fill_color = base_color.darker(120)  # Затемняем цвет при наведении
+        else:
+            fill_color = base_color
+
+        # Создаем скругленный прямоугольник
+        rect = QRectF(option.rect).adjusted(1, 2, -1, -1)  # Добавляем отступы
+        radius = 6  # Радиус скругления
+
+        # Рисуем фон с закругленными краями
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(QBrush(fill_color))
+        painter.setPen(QPen(Qt.NoPen))  # Без границ
+        painter.drawRoundedRect(rect, radius, radius)
+
+        # Рисуем стандартный текст
+        painter.setPen(Qt.black)
+        text_rect = option.rect.adjusted(6, 0, 0, 0)
+        painter.drawText(text_rect, Qt.AlignVCenter | Qt.TextSingleLine, index.data())
+
+class CustomComboBox(QComboBox):
+    """ Кастомный QComboBox, который поддерживает изменение цвета элементов """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.currentIndexChanged.connect(self.updateColor)  # Обновляем стиль при смене элемента
+
+    def addColoredItem(self, text, color):
+        """ Добавляет элемент с цветом """
+        self.addItem(text)
+        index = self.count() - 1  # Индекс последнего элемента
+        self.setItemData(index, color, Qt.UserRole)  # Сохраняем цвет в UserRole
+
+        if index == 0:  # Если это первый элемент, сразу обновляем цвет
+            self.updateColor(0)
+
+    def updateColor(self, index):
+        """ Обновляет цвет главной кнопки через CSS """
+        color = self.itemData(index, Qt.UserRole)
+        if color:
+            base_color = QColor(color)
+
+            self.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {color};
+                padding: 8px; 
+                border-radius: 5px;
+            }}
+            QComboBox::drop-down {{
+                border: none;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: rgb(230, 224, 200);
+                padding: 8px; 
+                border-radius: 5px;
+            }}
+            QComboBox QAbstractItemView::item {{
+                padding: 8px; 
+            }}
+            """)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        # Рисуем кастомную иконку стрелки прямо
+        arrow = '▼'
+        # Метрики шрифта
+        fm = painter.fontMetrics()
+        aw = fm.horizontalAdvance(arrow)
+        ah = fm.height()
+
+        # Позиционируем: справа с отступом, по центру по вертикали
+        margin = 10
+        x = self.width() - aw - margin
+        # y — это базовая линия текста, поэтому подгоняем:
+        y = (self.height() + fm.ascent() - fm.descent()) // 2
+
+        painter.drawText(x, y, arrow)
 
 
 class AddEventDialog(QDialog):
     def __init__(self, date, schedule_manager):
         super().__init__()
+        self.color = QColor('#3e5d07')
         self.setStyleSheet("""
             QDialog {
                 background-color: rgb(230, 224, 200);
@@ -78,7 +172,8 @@ class AddEventDialog(QDialog):
         self.start_time_input = QTimeEdit()
         self.end_time_input = QTimeEdit()
         self.description_input = QTextEdit()
-        self.theme_input = QComboBox()
+        self.theme_input = CustomComboBox()
+        self.theme_input.setItemDelegate(ColorDelegate())
 
         self._setup_ui()
 
@@ -112,14 +207,22 @@ class AddEventDialog(QDialog):
         theme_label = QLabel("Тема:")
         self.layout.addWidget(theme_label)
         self.theme_input.setEditable(True)
-        self.theme_input.addItem("")
+        self.theme_input.addColoredItem("", "white")
         all_themes = set()
         for date, events in self.schedule_manager.get_schedule().items():
             for event in events:
                 all_themes.add(event['theme'])
-        for theme in sorted(all_themes):
-            self.theme_input.addItem(theme)
+        palette = ["#FFFFFF"]
+
+        for i, theme in enumerate(sorted(all_themes)):
+            color = palette[i % len(palette)]
+            self.theme_input.addColoredItem(theme, color)
+
         self.layout.addWidget(self.theme_input)
+
+        self.color_button = QPushButton("Цвет темы", self)
+        self.layout.addWidget(self.color_button)
+        self.color_button.clicked.connect(self.open_color_dialog)
 
         # Поле для описания
         description_label = QLabel("Описание:")
@@ -162,6 +265,7 @@ class AddEventDialog(QDialog):
         start_time = self.start_time_input.time().toString("HH:mm")
         end_time = self.end_time_input.time().toString("HH:mm")
         theme = self.theme_input.currentText().strip()
+        color = self.color.name()
         description = self.description_input.toPlainText().strip()
 
         # Проверка на пустую тему
@@ -207,6 +311,23 @@ class AddEventDialog(QDialog):
                     return
 
         # Добавление события в расписание
-        self.schedule_manager.add_event(date, start_time, end_time, theme, description)
+        self.schedule_manager.add_event(date, start_time, end_time, theme, color, description)
         QMessageBox.information(self, "Успех", "Событие добавлено!")
         self.close()
+
+    def open_color_dialog(self):
+        # Открываем диалог выбора цвета
+        self.color = QColorDialog.getColor(initial=QColor(255, 255, 255), parent=self,
+                                      title="Выберите цвет")
+        hover_color = self.color.darker(120)
+        # Если пользователь не нажал Отмена
+        if self.color.isValid():
+            # Устанавливаем стиль кнопки: background-color
+            self.color_button.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {self.color.name()};
+                }}
+                QPushButton:hover {{
+                    background-color: {hover_color.name()};
+                }}
+            """)

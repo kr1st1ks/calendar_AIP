@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import QMessageBox
 from collections import defaultdict  # Добавлен импорт defaultdict
 
+
 def load_schedule_from_file(schedule_manager):
     if os.path.exists("schedule.json"):
         try:
@@ -12,6 +13,7 @@ def load_schedule_from_file(schedule_manager):
             print("Расписание загружено из файла.")
         except Exception as e:
             QMessageBox.warning(None, "Ошибка", f"Не удалось загрузить расписание: {e}")
+
 
 def save_schedule_to_file(schedule_manager):
     try:

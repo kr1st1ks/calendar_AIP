@@ -14,6 +14,10 @@ from export.export_to_docx import export_schedule_to_docx
 from utils.file_utils import load_schedule_from_file, save_schedule_to_file
 
 class RoundedCalendar(QCalendarWidget):
+    def __init__(self, schedule_manager, parent=None):
+        super().__init__(parent)
+        self.schedule_manager = schedule_manager
+
     def paintCell(self, painter, rect, date):
         if date == self.selectedDate():
             painter.setBrush(QBrush(QColor(139, 93, 36)))  # Цвет фона выделенной ячейки
@@ -33,6 +37,41 @@ class RoundedCalendar(QCalendarWidget):
         painter.setPen(text_color)
         text_rect = QRect(rect.x() + 5, rect.y() + 10, rect.width() - 20, rect.height() - 18)
         painter.drawText(text_rect, Qt.AlignRight | Qt.AlignTop, str(date.day()))
+
+        # Получаем список событий на эту дату
+        key = date.toString("yyyy-MM-dd")
+        events = self.schedule_manager.get_schedule(key)
+        if not events:
+            return
+
+        # Сортируем по времени начала
+        from PyQt5.QtCore import QTime
+        events = sorted(events, key=lambda e: QTime.fromString(e['start_time'], "HH:mm"))
+
+        # Вычисляем высоту одной «метки»
+        max_labels = len(events)
+        # Оставим место под номер, поэтому отступ сверху:
+        top_offset = rect.y() + 35
+        available_height = rect.height() - 20
+        label_height = min((available_height - (max_labels - 1) * 2) / max_labels, 14)
+
+        for idx, ev in enumerate(events):
+            y = top_offset + idx * (label_height + 2)
+            oval_rect = QRect(rect.x() + 2, int(y), rect.width() - 4, int(label_height))
+
+            color = ev.get('color')
+
+            painter.setBrush(QBrush(QColor(color)))
+            painter.setPen(Qt.NoPen)
+            painter.drawRoundedRect(oval_rect, label_height / 2, label_height / 2)
+
+            # Рисуем текст описания события
+            painter.setPen(Qt.black)
+            painter.drawText(
+                oval_rect.adjusted(4, 0, -4, 0),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                ev['description']
+            )
 
 class ScheduleApp(QMainWindow):
     def __init__(self):
@@ -99,7 +138,7 @@ class ScheduleApp(QMainWindow):
         self.export_button.clicked.connect(self.export_to_docx)
         self.button_layout.addWidget(self.export_button)
 
-        self.calendar = RoundedCalendar()
+        self.calendar = RoundedCalendar(self.schedule_manager)
         self.calendar.setVerticalHeaderFormat(self.calendar.NoVerticalHeader)
         self.calendar.setStyleSheet("""
             #qt_calendar_navigationbar {
@@ -206,8 +245,8 @@ class ScheduleApp(QMainWindow):
         self.layout.addWidget(self.hidden_frame)
 
         self.event_table = QTableWidget()
-        self.event_table.setColumnCount(5)
-        self.event_table.setHorizontalHeaderLabels(["Дата", "Начало", "Конец", "Тема", "Описание"])
+        self.event_table.setColumnCount(6)
+        self.event_table.setHorizontalHeaderLabels(["Дата", "Начало", "Конец", "Тема", "Цвет", "Описание"])
         self.event_table.setStyleSheet("""
             QTableWidget {
                 border: 1px solid #ddd;
@@ -370,8 +409,9 @@ class ScheduleApp(QMainWindow):
         start_time = self.event_table.item(selected_row, 1).text()
         end_time = self.event_table.item(selected_row, 2).text()
         theme = self.event_table.item(selected_row, 3).text()
-        description = self.event_table.item(selected_row, 4).text()
-        self.schedule_manager.delete_event(date, start_time, end_time, theme, description)
+        color = self.event_table.item(selected_row, 4).text()
+        description = self.event_table.item(selected_row, 5).text()
+        self.schedule_manager.delete_event(date, start_time, end_time, theme, color, description)
         self.update_schedule_view()
         self.add_event_dots()
 
@@ -384,8 +424,9 @@ class ScheduleApp(QMainWindow):
         start_time = self.event_table.item(selected_row, 1).text()
         end_time = self.event_table.item(selected_row, 2).text()
         theme = self.event_table.item(selected_row, 3).text()
-        description = self.event_table.item(selected_row, 4).text()
-        dialog = EditEventDialog(date, start_time, end_time, theme, description, self.schedule_manager)
+        color = self.event_table.item(selected_row, 4).text()
+        description = self.event_table.item(selected_row, 5).text()
+        dialog = EditEventDialog(date, start_time, end_time, theme, color, description, self.schedule_manager)
         dialog.exec()
         self.update_schedule_view()
         self.add_event_dots()
@@ -425,7 +466,8 @@ class ScheduleApp(QMainWindow):
                 self.event_table.setItem(row, 1, QTableWidgetItem(event['start_time']))
                 self.event_table.setItem(row, 2, QTableWidgetItem(event['end_time']))
                 self.event_table.setItem(row, 3, QTableWidgetItem(event['theme']))
-                self.event_table.setItem(row, 4, QTableWidgetItem(event['description']))
+                self.event_table.setItem(row, 4, QTableWidgetItem(event['color']))
+                self.event_table.setItem(row, 5, QTableWidgetItem(event['description']))
         self.event_table.resizeColumnsToContents()
 
     def export_to_docx(self):
