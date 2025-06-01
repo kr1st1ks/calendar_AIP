@@ -180,7 +180,10 @@ class EditEventDialog(QDialog):
         new_start_time = self.start_time_input.time().toString("HH:mm")
         new_end_time = self.end_time_input.time().toString("HH:mm")
         new_description = self.description_input.toPlainText().strip()
-        new_color = self.new_color.name()
+        if hasattr(self.new_color, 'name'):  # проверяем, является ли это QColor
+            new_color = self.new_color.name()
+        else:
+            new_color = self.new_color  # если это уже строка
         new_theme = self.theme_input.currentText().strip()
 
         # Проверка на пустую тему
