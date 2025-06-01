@@ -56,7 +56,8 @@ def convert_to_final_format(intermediate_data):
             "end_time": event["endTime"],
             "theme": event["title"],
             "color": event["color"],
-            "description": event["description"]
+            "description": event["description"],
+            "userId": event["userId"]
         }
 
         final_data[date].append(event_entry)
@@ -80,9 +81,14 @@ def get_events_from_firestore():
 
 
 def save_to_json(data, filename):
-    """Сохраняет данные в JSON файл"""
+    """Сохраняет данные в JSON файл без поля 'color'"""
+    # Создаем копию данных, чтобы не изменять оригинальный словарь
+    data_to_save = data.copy()
+    # Удаляем поле 'color', если оно существует
+    data_to_save.pop("color", None)
+
     with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+        json.dump(data_to_save, f, ensure_ascii=False, indent=4)
 
 def load_schedule_from_file(schedule_manager):
     if os.path.exists("schedule.json"):
@@ -133,25 +139,56 @@ def convert_to_firebase_format(local_data):
     return firebase_events
 
 
+def delete_all_events():
+    """Удаляет все события из коллекции events"""
+    try:
+        # Получаем все документы в коллекции
+        events_ref = db.collection("events")
+        docs = events_ref.stream()
+
+        # Создаем batch для удаления
+        batch = db.batch()
+
+        # Добавляем все документы в batch для удаления
+        deleted_count = 0
+        for doc in docs:
+            batch.delete(doc.reference)
+            deleted_count += 1
+
+        # Выполняем удаление
+        batch.commit()
+        print(f"Удалено {deleted_count} событий")
+        return True
+    except Exception as e:
+        print(f"Ошибка при удалении событий: {e}")
+        return False
+
+
 def upload_to_firestore(events):
     """Загружает события в Firestore"""
-    batch = db.batch()
-    events_ref = db.collection("events")
+    try:
+        batch = db.batch()
+        events_ref = db.collection("events")
 
-    for event in events:
-        # Создаем новый документ с автоматическим ID
-        new_doc_ref = events_ref.document()
-        batch.set(new_doc_ref, event)
+        for event in events:
+            if isinstance(event, dict):  # Исправлено: используем isinstance вместо type()
+                new_doc_ref = events_ref.document()
+                batch.set(new_doc_ref, event)
 
-    # Фиксируем все изменения одной транзакцией
-    batch.commit()
-    print(f"Успешно загружено {len(events)} событий")
+        # Фиксируем все изменения одной транзакцией
+        batch.commit()
+        print(f"Успешно загружено {len(events)} событий")
+        return True
+    except Exception as e:
+        print(f"Ошибка при загрузке событий: {e}")
+        return False
 
 
 def load_local_json(filename):
     """Загружает данные из локального JSON-файла"""
     with open(filename, 'r', encoding='utf-8') as f:
         return json.load(f)
+
 
 def save_schedule_to_file(schedule_manager):
     try:
@@ -165,7 +202,13 @@ def save_schedule_to_file(schedule_manager):
         # 2. Преобразуем в формат Firebase
         firebase_events = convert_to_firebase_format(local_data)
 
-        # 3. Загружаем в Firestore
-        upload_to_firestore(firebase_events)
+        # 3. Удаляем все старые события
+        if delete_all_events():
+            # 4. Загружаем новые события
+            if not upload_to_firestore(firebase_events):
+                QMessageBox.warning(None, "Ошибка", "Не удалось загрузить события в Firestore")
+        else:
+            QMessageBox.warning(None, "Ошибка", "Не удалось удалить старые события")
+
     except Exception as e:
         QMessageBox.warning(None, "Ошибка", f"Не удалось сохранить расписание: {e}")
