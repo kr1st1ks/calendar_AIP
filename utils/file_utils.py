@@ -6,9 +6,14 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 
-# Инициализация Firebase Admin SDK
-cred = credentials.Certificate(
-    r"C:\Users\Lenovo\PycharmProjects\PythonProject\calendar-aip-kr-firebase-adminsdk-fbsvc-68c271d4af.json")
+# Получаем путь к директории, где находится текущий скрипт
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Формируем путь к файлу credentials относительно текущей директории
+cred_path = os.path.join(current_dir, "calendar-aip-kr-firebase-adminsdk-fbsvc-68c271d4af.json")
+
+cred = credentials.Certificate(cred_path)
+
 firebase_admin.initialize_app(cred, {
     'projectId': 'calendar-aip-kr'
 })
