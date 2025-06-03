@@ -1,12 +1,28 @@
 from docx import Document
-from docx.shared import Pt
+from docx.shared import Pt, Inches
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
+
 
 def export_schedule_to_docx(schedule, file_name):
     doc = Document()
-    doc.add_heading("Расписание", 0)
 
+    # Убираем отступы и маргиналы в документе
+    section = doc.sections[0]
+    section.left_margin = Inches(0.5)  # Убираем отступ слева
+    section.right_margin = Inches(0.5)  # Устанавливаем отступ справа в 0.5 дюйма
+    section.top_margin = Inches(0.5)  # Убираем верхний отступ
+    section.bottom_margin = Inches(0.5)  # Убираем нижний отступ
+
+    # Добавляем заголовок
+    doc.add_heading("Расписание", level=0)
+
+    # Создаем таблицу с заголовками
     table = doc.add_table(rows=1, cols=5)
+    table.style = 'Table Grid'  # Устанавливаем стиль таблицы (с рамками)
+    table.autofit = False  # Отключаем авторазмеры колонок
+
+    # Настраиваем заголовки таблицы
     headers = table.rows[0].cells
     headers[0].text = "Дата"
     headers[1].text = "Время начала"
@@ -14,36 +30,32 @@ def export_schedule_to_docx(schedule, file_name):
     headers[3].text = "Тема"
     headers[4].text = "Описание"
 
+    # Применяем стили к заголовкам
     for cell in headers:
-        cell.paragraphs[0].runs[0].font.bold = True
-        cell.paragraphs[0].alignment = 1
+        paragraph = cell.paragraphs[0]
+        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        run = paragraph.runs[0]
+        run.bold = True
+        run.font.size = Pt(11)
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
-    table.columns[0].width = Pt(80)
-    table.columns[1].width = Pt(80)
-    table.columns[2].width = Pt(80)
-    table.columns[3].width = Pt(120)
-    table.columns[4].width = Pt(20)
-
+    # Добавляем данные в таблицу
     for date, events in sorted(schedule.items()):
         for event in events:
             row_cells = table.add_row().cells
             row_cells[0].text = date
-            row_cells[1].text = event['start_time']
-            row_cells[2].text = event['end_time']
-            row_cells[3].text = event['theme']
-            row_cells[4].text = event['description']
+            row_cells[1].text = event.get('start_time', "")
+            row_cells[2].text = event.get('end_time', "")
+            row_cells[3].text = event.get('theme', "")
+            row_cells[4].text = event.get('description', "")
 
-            row_cells[0].paragraphs[0].alignment = 0
-            row_cells[1].paragraphs[0].alignment = 0
-            row_cells[2].paragraphs[0].alignment = 0
-            row_cells[3].paragraphs[0].alignment = 0
-
-            for paragraph in row_cells[4].paragraphs:
-                for run in paragraph.runs:
-                    run.font.size = Pt(10)
-
+            # Применяем стили к ячейкам
             for cell in row_cells:
-                cell.paragraphs[0].alignment = 3
+                paragraph = cell.paragraphs[0]
+                paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                run = paragraph.runs[0]
+                run.font.size = Pt(10)
                 cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
+    # Сохраняем документ
     doc.save(file_name)
